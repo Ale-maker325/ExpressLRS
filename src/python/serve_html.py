@@ -18,6 +18,7 @@ from external.wheezy.template.loader import FileLoader
 net_counter = 0
 isTX = False
 hasSubGHz = False
+is8285 = True
 chip = 'LR1121'
 
 config = {
@@ -112,11 +113,13 @@ config = {
     }
 
 def apply_template(mainfile):
-    global isTX, hasSubGHz
+    global isTX, hasSubGHz, chip, is8285
     if(isTX):
         platform = 'Unified_ESP32_2400_TX'
+        is8285 = False
     else:
         platform = 'Unified_ESP8285_2400_RX'
+        is8285 = True
     engine = Engine(
         loader=FileLoader(["html"]),
         extensions=[CoreExtension("@@")]
@@ -127,13 +130,14 @@ def apply_template(mainfile):
             'PLATFORM': platform,
             'isTX': isTX,
             'hasSubGHz': hasSubGHz,
-            'chip': chip
+            'chip': chip,
+            'is8285': is8285
         })
     return data
 
 @route('/')
 def index():
-    global net_counter, isTX, hasSubGHz, chip
+    global net_counter, isTX, hasSubGHz, chip, is8285
     net_counter = 0
     isTX = 'isTX' in request.query
     hasSubGHz = 'hasSubGHz' in request.query
@@ -184,6 +188,35 @@ def cw_js():
 def cw():
     response.content_type = 'application/json; charset=latin9'
     return '{"radios": 2, "center": 915000000, "center2": 2440000000}'
+
+@route('/lr1121.html')
+def lr1121_html():
+    response.content_type = 'text/html; charset=latin9'
+    return apply_template('lr1121.html')
+
+@route('/lr1121.js')
+def lr1121_js():
+    response.content_type = 'text/javascript; charset=latin9'
+    return apply_template('lr1121.js')
+
+@route('/lr1121.json')
+def lr1121_json():
+    return {
+        "radio1": {
+            "hardware": 34,
+            "type": 3,
+            "firmware": 259
+        },
+        "radio2": {
+            "hardware": 34,
+            "type": 3,
+            "firmware": 257
+        }
+    }
+
+@route('/lr1121', method="POST")
+def lr1121_upload():
+    return '{ "status": "ok", "msg": "All good!" }'
 
 @route('/config')
 def options():
